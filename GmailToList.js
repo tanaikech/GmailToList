@@ -7,11 +7,20 @@
 function Do(object) {
     return new GmailToList(object).Do();
 }
+
+/**
+ * Get attachment files from Gmail.<br>
+ * @param {Object} Object Object
+ * @return {Object} Return Object
+ */
+function getAttachmentFiles(object) {
+    return new GmailToList().getAttachmentFiles(object);
+}
 ;
 (function(r) {
   var GmailToList;
   GmailToList = (function() {
-    var convertObjectToArray, getAllMessagesAsObject, getAllMessagesByGmailAPI, getData, getMessages;
+    var convertObjectToArray, getAllMessagesAsObject, getAllMessagesByGmailAPI, getAttachmentFilesAsBlob, getData, getMessages;
 
     GmailToList.name = "GmailToList";
 
@@ -54,6 +63,26 @@ function Do(object) {
         }
         resObj.array = array;
         return resObj;
+      } catch (error) {
+        err = error;
+        return {
+          error: err
+        };
+      }
+    };
+
+    GmailToList.prototype.getAttachmentFiles = function(obj_) {
+      var err;
+      try {
+        if (!("attachments" in obj_) || !Array.isArray(obj_.attachments)) {
+          return {
+            error: "No attachments."
+          };
+        }
+        if (!("userId" in obj_) || obj_.userId === "") {
+          obj_.userId = "me";
+        }
+        return getAttachmentFilesAsBlob.call(this, obj_);
       } catch (error) {
         err = error;
         return {
@@ -265,6 +294,40 @@ function Do(object) {
       });
       this.obj.statistics.totalMessages = values.length;
       return values;
+    };
+
+    getAttachmentFilesAsBlob = function(obj_) {
+      var attachmentIds, attachments, attachmentsFromBatch, batchReqs, i, j, limit, ref, reqs, requests, response, split, temp, userId;
+      userId = obj_.userId;
+      attachmentIds = obj_.attachments;
+      limit = 100;
+      split = Math.ceil(attachmentIds.length / limit);
+      attachments = [];
+      for (i = j = 0, ref = split; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+        reqs = attachmentIds.splice(0, limit);
+        batchReqs = reqs.map(function(e) {
+          return {
+            method: "GET",
+            endpoint: "https://www.googleapis.com/gmail/v1/users/" + userId + "/messages/" + e.messageId + "/attachments/" + e.attachmentId
+          };
+        });
+        requests = {
+          batchPath: "/gmail/v1/users/",
+          requests: batchReqs
+        };
+        response = BatchRequest.Do(requests).getContentText();
+        temp = response.split("--batch");
+        attachmentsFromBatch = temp.slice(1, temp.length - 1).map(function(e) {
+          return JSON.parse(e.match(/{[\S\s]+}/g)[0]);
+        });
+        attachmentsFromBatch.forEach(function(e, i) {
+          attachmentsFromBatch[i].filename = reqs[i].filename;
+          attachmentsFromBatch[i].mimeType = reqs[i].mimeType;
+          attachmentsFromBatch[i].data = Utilities.newBlob(Utilities.base64DecodeWebSafe(attachmentsFromBatch[i].data), reqs[i].mimeType, reqs[i].filename);
+        });
+        Array.prototype.push.apply(attachments, attachmentsFromBatch);
+      }
+      return attachments;
     };
 
     return GmailToList;

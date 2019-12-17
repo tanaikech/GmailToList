@@ -23,6 +23,13 @@ When this library is used, all messages of own Gmail can be exported as a list. 
 1ZZfjzKy37lzld3fIB9N3EQ3I1A6Mixz2MWqpu5f3YoiHUMAdCX0lEMYh
 ```
 
+# Methods
+
+| Methods                                           | Description                                     |
+| :------------------------------------------------ | :---------------------------------------------- |
+| [Do(object)](#do)                                 | Retrieve all messages from own Gmail as a list. |
+| [getAttachmentFiles(object)](#getattachmentfiles) | Retrieve attachment files as blob.              |
+
 <a name="usage"></a>
 
 # Usage:
@@ -54,7 +61,9 @@ The following scopes are automatically set when you install this library. When y
 
 This library uses an external GAS library. It's [BatchRequest](https://github.com/tanaikech/BatchRequest). All messages of Gmail are retrieved by the batch request. In this case, the number of API call can be reduced. But the current quota of "Email read/write (excluding send)" is 20,000 / day. [Ref](https://developers.google.com/apps-script/guides/services/quotas) Please be careful this.
 
-## 2. Sample script
+<a name="do"></a>
+
+## 2. Method: `Do`
 
 ### Sample 1
 
@@ -119,6 +128,46 @@ The value of `res.array` is as follows.
 
 - `attachmentId`: When present, contains the ID of an external attachment that can be retrieved in a separate messages.attachments.get request. When not present, the entire content of the message part body is contained in the data field. [Ref](https://developers.google.com/gmail/api/v1/reference/users/messages/attachments)i/v1/reference/users/messages/attachments/get
 
+<a name="getattachmentfiles"></a>
+
+## 3. Method: `getAttachmentFiles`
+
+### Sample script
+
+```javascript
+var object = {
+  userId: "me",
+  attachments: [
+    {
+      messageId: "###",
+      attachmentId: "###",
+      filename: "###",
+      mimeType: "###"
+    },
+    ,
+    ,
+  ]
+};
+var res = GmailToList.getAttachmentFiles(object);
+```
+
+### Sample result
+
+```json
+[
+  {
+    "size": ##,
+    "data": Blob,
+    "filename": "###",
+    "mimeType": "###"
+  },
+  ,
+  ,
+]
+```
+
+You can create files using the blob.
+
 ---
 
 <a name="licence"></a>
@@ -142,5 +191,9 @@ If you have any questions and commissions for me, feel free to tell me.
 - v1.0.0 (December 16, 2019)
 
   1. Initial release.
+
+- v1.0.1 (December 17, 2019)
+
+  1. [New method of `getAttachmentFiles()`](#getattachmentfiles) was added. The attachment files can be retrieved as blob using this method.
 
 [TOP](#top)
